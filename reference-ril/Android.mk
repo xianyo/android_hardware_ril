@@ -2,6 +2,8 @@
 
 # XXX using libutils for simulator build only...
 #
+ifeq ($(BOARD_HAVE_MODEM),true)
+
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -18,6 +20,14 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_CFLAGS := -D_GNU_SOURCE
 
 LOCAL_C_INCLUDES :=
+
+ifeq ($(BOARD_MODEM_HAVE_DATA_DEVICE),true)
+  LOCAL_CFLAGS += -DHAVE_DATA_DEVICE
+endif
+
+ifeq ($(BOARD_MODEM_VENDOR),HUAWEI)
+  LOCAL_CFLAGS += -DHUAWEI_MODEM
+endif
 
 ifeq ($(TARGET_DEVICE),sooner)
   LOCAL_CFLAGS += -DUSE_TI_COMMANDS
@@ -44,4 +54,6 @@ else
       libril
   LOCAL_MODULE:= reference-ril
   include $(BUILD_EXECUTABLE)
+endif
+
 endif
