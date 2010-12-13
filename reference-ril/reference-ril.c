@@ -38,6 +38,8 @@
 #define LOG_TAG "RIL"
 #include <utils/Log.h>
 
+#include "runtime.h"
+
 #define MAX_AT_RESPONSE 0x1000
 
 /* property to control the delay (in seconds) to initialize RIL */
@@ -72,7 +74,7 @@ typedef enum {
     SIM_PIN = 3,
     SIM_PUK = 4,
     SIM_NETWORK_PERSONALIZATION = 5
-} SIM_Status; 
+} SIM_Status;
 
 static void onRequest (int request, void *data, size_t datalen, RIL_Token t);
 static RIL_RadioState currentState();
@@ -273,13 +275,13 @@ static void requestRadioPower(void *data, size_t datalen, RIL_Token t)
     onOff = ((int *)data)[0];
 
     if (onOff == 0 && sState != RADIO_STATE_OFF) {
-#ifdef USE_AMAZONE_MODEM
-        err = at_send_command("AT+CFUN=4", &p_response);
-#else
-	err = at_send_command("AT+CFUN=0", &p_response);
-#endif
-       if (err < 0 || p_response->success == 0) goto error;
-        setRadioState(RADIO_STATE_OFF);
+	    if (current_modem_type == AMAZON_MODEM)
+		    err = at_send_command("AT+CFUN=4", &p_response);
+	    else
+		    err = at_send_command("AT+CFUN=0", &p_response);
+	    if (err < 0 || p_response->success == 0)
+		    goto error;
+	    setRadioState(RADIO_STATE_OFF);
     } else if (onOff > 0 && sState == RADIO_STATE_OFF) {
         err = at_send_command("AT+CFUN=1", &p_response);
         if (err < 0|| p_response->success == 0) {
@@ -1009,11 +1011,14 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
     char *cmd;
     int err;
     ATResponse *p_response = NULL;
-#ifndef HUAWEI_MODEM
-    char *response[2] = { "1", PPP_TTY_PATH };
-#else
-    char *response[3] = { "1", PPP_TTY_PATH, ""};
-#endif
+    char *response2[2] = { "1", PPP_TTY_PATH };
+    char *response3[3] = { "1", PPP_TTY_PATH, ""};
+    char **response;
+
+    if (current_modem_type == HUAWEI_MODEM)
+	    response = response3;
+    else
+	    response = response2;
 
     apn = ((const char **)data)[2];
 
@@ -1025,7 +1030,7 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
     err = at_send_command("AT%DATA=2,\"UART\",1,,\"SER\",\"UART\",0", NULL);
 #endif /* USE_TI_COMMANDS */
 
-#ifndef HUAWEI_MODEM
+    if (current_modem_type == UNKNOWN_MODEM) {
     int fd, qmistatus;
     size_t cur = 0;
     size_t len;
@@ -1088,7 +1093,7 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
 	    if (qmistatus < 0) goto error;
 
 	} else {
-        asprintf(&cmd, "AT+CGDCONT=1,\"IP\",\"%s\",,0,0", apn);
+	    asprintf(&cmd, "AT+CGDCONT=1,\"IP\",\"%s\",,0,0", apn);
 	    //FIXME check for error here
 	    err = at_send_command(cmd, NULL);
 	    free(cmd);
@@ -1112,7 +1117,8 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
 	        goto error;
 	    }
     }
-#else
+    } else {/* if current_modem_type == UNKNOWN_MODEM */
+
     int fd;
     char buffer[20];
     char exit_code[PROPERTY_VALUE_MAX];
@@ -1141,22 +1147,19 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
     // packet-domain event reporting
     err = at_send_command("AT+CGEREP=1,0", NULL);
 
-#ifndef USE_AMAZONE_MODEM
-    // Hangup anything that's happening there now
-    err = at_send_command("AT+CGACT=0,1", NULL);
+    if (current_modem_type != AMAZON_MODEM) {
+	    /* Hangup anything that's happening there now */
+	    err = at_send_command("AT+CGACT=0,1", NULL);
 
-    // Start data on PDP context 1
-    err = at_send_command("ATD*99***1#", &p_response);
+	    /* Start data on PDP context 1 */
+	    err = at_send_command("ATD*99***1#", &p_response);
 
-    if (err < 0 || p_response->success == 0) {
-        goto error;
+	    if (err < 0 || p_response->success == 0)
+		    goto error;
+    } else {
+	    if (err < 0)
+		    goto error;
     }
-#else
-    #
-    if (err < 0) {
-	    goto error;
-    }
-#endif
     // Setup PPP connection after PDP Context activated successfully
     // The ppp service name is specified in /init.rc
     property_set(PROPERTY_PPPD_EXIT_CODE, "");
@@ -1170,11 +1173,10 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
     LOGD("PPPd started");
 
     // Wait for PPP interface ready
-#ifdef USE_AMAZONE_MODEM
-    sleep(2);
-#else
-    sleep(1);
-#endif
+    if (current_modem_type == AMAZON_MODEM)
+	    sleep(2);
+    else
+	    sleep(1);
     do {
 	// Check whether PPPD exit abnormally
 	property_get(PROPERTY_PPPD_EXIT_CODE, exit_code, "");
@@ -1217,8 +1219,7 @@ static void requestSetupDataCall(void *data, size_t datalen, RIL_Token t)
 
     if(retry == 0)
 	goto ppp_error;
-#endif
-
+    } /* Else if UNKNOWN_MODEM */
     RIL_onRequestComplete(t, RIL_E_SUCCESS, response, sizeof(response));
     at_response_free(p_response);
 
@@ -2226,6 +2227,8 @@ mainLoop(void *param)
                                             SOCK_STREAM );
             } else if (s_device_path != NULL) {
                 fd = open (s_device_path, O_RDWR);
+		if (fd < 0)
+			LOGE("Error On open:%s:%s", s_device_path, strerror(errno));
                 if ( fd >= 0 && !memcmp( s_device_path, "/dev/ttyS", 9 ) ) {
                     /* disable echo on serial ports */
                     struct termios  ios;
@@ -2241,23 +2244,21 @@ mainLoop(void *param)
                 /* never returns */
             }
         }
-
-#ifdef HUAWEI_MODEM
-        /* Set UART parameters (e.g. Buad rate) for connecting with HUAWEI modem */
-        tcgetattr(fd, &old_termios);
-	new_termios = old_termios;
-	new_termios.c_lflag &= ~(ICANON | ECHO | ISIG);
-	new_termios.c_cflag |= (CREAD | CLOCAL);
-	new_termios.c_cflag &= ~(CSTOPB | PARENB | CRTSCTS);
-	new_termios.c_cflag &= ~(CBAUD | CSIZE) ;
-	new_termios.c_cflag |= (B115200 | CS8);
-	ret = tcsetattr(fd, TCSANOW, &new_termios);
-	if(ret < 0) {
-            LOGE ("Fail to set UART parameters. tcsetattr return %d \n", ret);
-            return 0;
+	if (current_modem_type != UNKNOWN_MODEM) {
+		/* Set UART parameters (e.g. Buad rate) for connecting with HUAWEI modem */
+		tcgetattr(fd, &old_termios);
+		new_termios = old_termios;
+		new_termios.c_lflag &= ~(ICANON | ECHO | ISIG);
+		new_termios.c_cflag |= (CREAD | CLOCAL);
+		new_termios.c_cflag &= ~(CSTOPB | PARENB | CRTSCTS);
+		new_termios.c_cflag &= ~(CBAUD | CSIZE) ;
+		new_termios.c_cflag |= (B115200 | CS8);
+		ret = tcsetattr(fd, TCSANOW, &new_termios);
+		if (ret < 0) {
+			LOGE ("Fail to set UART parameters. tcsetattr return %d \n", ret);
+			return 0;
+		}
 	}
-#endif
-
         s_closed = 0;
         ret = at_open(fd, onUnsolicited);
 
@@ -2303,7 +2304,7 @@ const RIL_RadioFunctions *RIL_Init(const struct RIL_Env *env, int argc, char **a
     pthread_attr_t attr;
 
     s_rilenv = env;
-
+    start_uevent_monitor();
 #ifdef HAVE_DATA_DEVICE
     while ( -1 != (opt = getopt(argc, argv, "p:d:u:s:"))) {
 #else
@@ -2343,18 +2344,21 @@ const RIL_RadioFunctions *RIL_Init(const struct RIL_Env *env, int argc, char **a
         }
     }
 
+    if (s_device_path == NULL)
+	    s_device_path = runtime_3g_port_device();
     if (s_port < 0 && s_device_path == NULL) {
         usage(argv[0]);
         return NULL;
     }
 
 #ifdef HAVE_DATA_DEVICE
+    if (s_data_device_path == NULL)
+	    s_data_device_path = runtime_3g_port_data();
     if (s_data_device_path == NULL) {
         usage(argv[0]);
         return NULL;
     }
 #endif
-
 
     pthread_attr_init (&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
