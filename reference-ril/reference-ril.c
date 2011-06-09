@@ -40,6 +40,7 @@
 
 #include "ril.h"
 #include "hardware/qemu_pipe.h"
+#include <linux/if.h>
 
 #define LOG_TAG "RIL"
 #include <utils/Log.h>
@@ -451,6 +452,30 @@ static void onDataCallListChanged(void *param __unused)
 static void requestDataCallList(void *data __unused, size_t datalen __unused, RIL_Token t)
 {
     requestOrSendDataCallList(&t);
+}
+
+void onDeactiveDataCallList()
+{
+    RIL_Data_Call_Response *responses =
+        alloca(sizeof(RIL_Data_Call_Response));
+    LOGI("onDeactiveDataCallList");
+    //For n pdp context, or just one pdp context?
+    //Always cid =1 ?
+    //CDMADataConnectionTracker::onDataStateChanged()
+    //or GSMDataConnectionTracker::onPdpStateChanged(), will handle this result
+
+    responses->cid = 1;
+    //LINK_INACTIVE = 0
+    //LINK_DOWN = 1
+    //LINK_UP = 2;
+    responses->active = 0;
+    responses->type = "";
+    responses->apn = "";
+    responses->address = "";
+
+    RIL_onUnsolicitedResponse(RIL_UNSOL_DATA_CALL_LIST_CHANGED,
+                                  responses,
+                                  sizeof(RIL_Data_Call_Response));
 }
 
 static void requestOrSendDataCallList(RIL_Token *t)
