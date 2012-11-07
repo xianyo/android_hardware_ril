@@ -11,7 +11,8 @@ LOCAL_SHARED_LIBRARIES := \
 	liblog \
 	libcutils \
 	libril \
-	libdl
+	libdl  \
+	libruntime-ril-port
 
 LOCAL_CFLAGS := -DRIL_SHLIB
 
