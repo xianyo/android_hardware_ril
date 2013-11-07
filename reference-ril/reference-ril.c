@@ -801,7 +801,7 @@ static void requestOrSendDataCallList(RIL_Token *t)
                 const char* separator = " ";
                 const int   dnslist_sz = 128;
                 char*       dnslist = alloca(dnslist_sz);
-                char  propName[PROP_NAME_MAX];
+                char  propName[PROP_VALUE_MAX];
                 memset(dnslist, 0, 128);
                 property_get("net.ppp0.dns1", propName, "8.8.8.8");
                 strlcat(dnslist, propName, dnslist_sz);
@@ -3598,6 +3598,7 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
                     RIL_onRequestComplete(t, RIL_E_SUCCESS, &tech, sizeof(tech));
             }
             break;
+
         case RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE:
             requestSetPreferredNetworkType(request, data, datalen, t);
             break;
