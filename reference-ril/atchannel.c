@@ -14,7 +14,7 @@
 ** See the License for the specific language governing permissions and
 ** limitations under the License.
 */
-/* Copyright (C) 2011-2013 Freescale Semiconductor, Inc. */
+/* Copyright (C) 2011-2014 Freescale Semiconductor, Inc. */
 
 #include "atchannel.h"
 #include "at_tok.h"
@@ -63,6 +63,8 @@ static ATUnsolHandler s_unsolHandler;
 
 static char s_ATBuffer[MAX_AT_RESPONSE+1];
 static char *s_ATBufferCur = s_ATBuffer;
+
+static int s_readCount = 0;
 
 #if AT_DEBUG
 void  AT_DUMP(const char*  prefix, const char*  buff, int  len)
