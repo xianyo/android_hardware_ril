@@ -1,5 +1,6 @@
 /* //device/system/reference-ril/reference-ril.c
 **
+** Copyright (C) 2011-2014 Freescale Semiconductor, Inc. 
 ** Copyright 2006, The Android Open Source Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +21,6 @@
  * Author: Kim Tommy Humborstad <kim.tommy.humborstad@stericsson.com>
 */
 /* Copyright (C) ST-Ericsson AB 2008-2010 */
-/* Copyright (C) 2011-2013 Freescale Semiconductor, Inc. */
 
 #include <telephony/ril_cdma_sms.h>
 #include <telephony/librilutils.h>
