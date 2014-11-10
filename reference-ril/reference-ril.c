@@ -55,7 +55,7 @@
 
 static void *noopRemoveWarning( void *a ) { return a; }
 #define RIL_UNUSED_PARM(a) noopRemoveWarning((void *)&(a));
-#include "runtime.h"
+#include "runtime/runtime.h"
 #include "fcp_parser.h"
 
 #define MAX_AT_RESPONSE 0x1000
@@ -3698,14 +3698,6 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
         	
         case RIL_REQUEST_QUERY_FACILITY_LOCK:
             requestQueryFacilityLock(data, datalen, t);
-            break;
-
-        case RIL_REQUEST_GET_CELL_INFO_LIST:
-            requestGetCellInfoList(data, datalen, t);
-            break;
-
-        case RIL_REQUEST_SET_UNSOL_CELL_INFO_LIST_RATE:
-            requestSetCellInfoListRate(data, datalen, t);
             break;
 
         case RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL:

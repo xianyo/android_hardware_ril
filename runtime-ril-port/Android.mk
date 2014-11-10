@@ -15,6 +15,5 @@ LOCAL_CFLAGS :=
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE:= libruntime-ril-port
 
-LOCAL_LDLIBS += -lpthread
 
 include $(BUILD_SHARED_LIBRARY)
