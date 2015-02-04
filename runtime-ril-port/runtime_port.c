@@ -13,7 +13,7 @@
  */
 
 /*
- * Copyright 2011-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright 2011-2015 Freescale Semiconductor, Inc. All Rights Reserved.
  */
 
 #include <stdio.h>
@@ -111,14 +111,6 @@ static struct modem_3g_device modem_3g_device_table[] = {
 		.idProduct	= "0145",
 		.deviceport     = "/dev/ttyUSB2",
 		.dataport	= "/dev/ttyUSB4",
-		.type		= ZTE_MODEM,
-	},
-	{
-		.name		= "ZTE-MF210",
-		.idVendor	= "19d2",
-		.idProduct	= "0117",
-		.deviceport     = "/dev/ttyUSB1",
-		.dataport	= "/dev/ttyUSB2",
 		.type		= ZTE_MODEM,
 	},
 };
