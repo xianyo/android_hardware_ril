@@ -193,9 +193,14 @@ struct modem_3g_device *find_matched_device(void)
 	int ret, i;
 
 	path = malloc(PATH_SIZE);
+    if (!path)
+        return NULL;
+
 	path2 = malloc(PATH_SIZE);
-	if (!path || !path2)
-		return NULL;
+    if (!path2) {
+        free(path);
+        return NULL;
+    }
 
 	usbdir = opendir(USB_DIR_BASE);
 	if (usbdir == NULL) {
