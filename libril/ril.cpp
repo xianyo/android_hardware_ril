@@ -370,6 +370,7 @@ static char * RIL_getRilSocketName() {
 extern "C"
 void RIL_setRilSocketName(const char * s) {
     strncpy(rild, s, MAX_SOCKET_NAME_LENGTH);
+    rild[MAX_SOCKET_NAME_LENGTH-1] = '\0';
 }
 
 static char *
