@@ -4034,16 +4034,17 @@ static void debugCallback (int fd, short flags, void *param) {
 
     if (recv(acceptFD, &number, sizeof(int), 0) != sizeof(int)) {
         RLOGE ("error reading on socket: number of Args: \n");
-        return;
+        goto out;
     }
     args = (char **) malloc(sizeof(char*) * number);
+    memset(args, 0, sizeof(char*) * number);
 
     for (int i = 0; i < number; i++) {
         int len;
         if (recv(acceptFD, &len, sizeof(int), 0) != sizeof(int)) {
             RLOGE ("error reading on socket: Len of Args: \n");
             freeDebugCallbackArgs(i, args);
-            return;
+            goto out;
         }
         // +1 for null-term
         args[i] = (char *) malloc((sizeof(char) * len) + 1);
@@ -4051,7 +4052,7 @@ static void debugCallback (int fd, short flags, void *param) {
             != (int)sizeof(char) * len) {
             RLOGE ("error reading on socket: Args[%d] \n", i);
             freeDebugCallbackArgs(i, args);
-            return;
+            goto out;
         }
         char * buf = args[i];
         buf[len] = 0;
@@ -4170,6 +4171,7 @@ static void debugCallback (int fd, short flags, void *param) {
             break;
     }
     freeDebugCallbackArgs(number, args);
+out:
     close(acceptFD);
 }
 
